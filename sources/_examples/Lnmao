@@ -1,0 +1,31 @@
+from lncrawl.core.crawler import Crawler
+
+class LnMaoCrawler(Crawler):
+    base_url = 'https://lnmao.org/'
+
+    def search_novel(self, query):
+        search_url = f"{self.base_url}/?s={query.replace(' ', '+')}&post_type=wp-manga"
+        soup = self.get_soup(search_url)
+
+        results = []
+        for novel in soup.select(".manga-title a"):
+            results.append({
+                'title': novel.text.strip(),
+                'url': novel["href"],
+            })
+        return results
+
+    def read_novel_info(self):
+        soup = self.get_soup(self.novel_url)
+        self.novel_title = soup.select_one(".post-title h1").text.strip()
+        self.novel_cover = soup.select_one(".summary_image img")["src"]
+
+        for chapter in soup.select(".wp-manga-chapter a"):
+            self.chapters.append({
+                "title": chapter.text.strip(),
+                "url": chapter["href"],
+            })
+
+    def download_chapter_body(self, chapter):
+        soup = self.get_soup(chapter["url"])
+        return str(soup.select_one(".reading-content"))
